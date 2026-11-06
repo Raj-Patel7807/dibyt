@@ -37,8 +37,7 @@ int main() {
     // 3. Scan directory and generate manifest
     dibyt::manifest::ScannerOptions options;
     dibyt::manifest::Manifest manifest;
-    auto err = dibyt::manifest::build_collection_manifest(temp_dir, "test_collection", options, manifest);
-    assert(err == dibyt::core::ErrorCode::kOk);
+    assert(dibyt::manifest::build_collection_manifest(temp_dir, "test_collection", options, manifest) == dibyt::core::ErrorCode::kOk);
     assert(manifest.collection_name == "test_collection");
     assert(manifest.files.size() == 3);
 
@@ -48,9 +47,9 @@ int main() {
     assert(manifest.files[2].relative_path == "subdir/data.txt");
 
     // Verify SHA-256 digests are non-empty and 64 characters
-    for (const auto& f : manifest.files) {
-        assert(f.sha256_hex.length() == 64);
-        assert(!f.id.empty());
+    for (const auto& file : manifest.files) {
+        assert(file.sha256_hex.length() == 64);
+        assert(!file.id.empty());
     }
 
     // 4. Test source mutation detection

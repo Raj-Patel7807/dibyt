@@ -25,8 +25,8 @@ int main() {
             wire_bytes.data(), dibyt::protocol::kHeaderSizeBytes
         );
         dibyt::protocol::FrameHeader decoded_hdr;
-        auto err = dibyt::protocol::decode_header(header_span, decoded_hdr);
-        assert(err == dibyt::core::ErrorCode::kOk);
+        // decode_header returns kOk on valid input; assert the decoded fields
+        assert(dibyt::protocol::decode_header(header_span, decoded_hdr) == dibyt::core::ErrorCode::kOk);
         assert(decoded_hdr.magic == dibyt::protocol::kProtocolMagic);
         assert(decoded_hdr.version == dibyt::protocol::kProtocolVersion1);
         assert(decoded_hdr.msg_type == dibyt::protocol::MessageType::kHandshakeReq);
@@ -40,11 +40,13 @@ int main() {
 
     // 2. Reject Corrupted Magic Bytes
     {
+        // Build a header buffer with a deliberately corrupted magic word
         uint8_t bad_magic[dibyt::protocol::kHeaderSizeBytes]{};
         bad_magic[0] = 'X'; // Corrupted magic
         bad_magic[1] = 'X';
         dibyt::protocol::FrameHeader hdr;
         assert(dibyt::protocol::decode_header(bad_magic, hdr) == dibyt::core::ErrorCode::kProtocolViolation);
+        (void)bad_magic; // buffer is inspected by decode_header above; suppress unused warning
     }
 
     // 3. Reject Oversized Payload Length (Pre-allocation Dos Guard)
