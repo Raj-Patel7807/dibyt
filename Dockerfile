@@ -44,8 +44,8 @@ RUN mkdir -p /var/lib/dibyt/data /var/lib/dibyt/staging /etc/dibyt && \
     chown -R dibyt:dibyt /var/lib/dibyt
 
 # Copy compiled binaries from builder stage
-COPY --from=builder /build/build/apps/dibyt-server/dibyt-server /usr/local/bin/dibyt-server
-COPY --from=builder /build/build/apps/dibyt-cli/dibyt /usr/local/bin/dibyt
+COPY --from=builder /build/build/dibyt-server /usr/local/bin/dibyt-server
+COPY --from=builder /build/build/dibyt /usr/local/bin/dibyt
 
 USER dibyt:dibyt
 WORKDIR /var/lib/dibyt
