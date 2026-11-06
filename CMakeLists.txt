@@ -192,6 +192,14 @@ add_executable(dibyt-server
 target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler dibyt::observability dibyt::security)
 dibyt_apply_warnings(dibyt-server)
 
+# Target 12: Embedded Management REST API Application
+add_executable(dibyt-api
+    apps/dibyt-api/src/router.cpp
+)
+target_include_directories(dibyt-api PRIVATE apps/dibyt-api/include)
+target_link_libraries(dibyt-api PRIVATE dibyt::core dibyt::storage dibyt::security dibyt::observability)
+dibyt_apply_warnings(dibyt-api)
+
 # Target 10: Testing & Smoke Verification
 if(DIBYT_BUILD_TESTS)
     enable_testing()
@@ -288,4 +296,13 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_security PRIVATE dibyt::core dibyt::manifest dibyt::security)
     dibyt_apply_warnings(test_security)
     add_test(NAME SecurityUnitTest COMMAND test_security)
+
+    add_executable(test_api
+        tests/unit/api/test_api.cpp
+        apps/dibyt-api/src/router.cpp
+    )
+    target_include_directories(test_api PRIVATE apps/dibyt-api/include)
+    target_link_libraries(test_api PRIVATE dibyt::core dibyt::manifest dibyt::storage dibyt::security dibyt::observability)
+    dibyt_apply_warnings(test_api)
+    add_test(NAME RestApiUnitTest COMMAND test_api)
 endif()

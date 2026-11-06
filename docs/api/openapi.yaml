@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: Dibyt Management REST API
+  description: Control-plane REST API for transfer lifecycle management, status inspection, and health telemetry. Bulk binary payloads are strictly disallowed on this interface and must flow over the TCP data plane.
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      summary: Service health and readiness check
+      responses:
+        '200':
+          description: Service is healthy and ready to accept requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: 0.1.0-dev
+
+  /api/v1/status:
+    get:
+      summary: Operational transfer engine status and metrics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current transfer statistics and state
+        '401':
+          description: Unauthorized; valid bearer token required
+
+  /api/v1/collections:
+    get:
+      summary: List registered immutable collections
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Array of collection metadata descriptors
+
+  /api/v1/transfers:
+    get:
+      summary: List active and historical transfer sessions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Array of transfer records
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
