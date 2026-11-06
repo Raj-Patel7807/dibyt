@@ -113,9 +113,27 @@ These historical artifacts are preserved as academic history in `legacy/academic
 
 ---
 
-## Build & Usage (Pending)
+## Build & Smoke Test
 
-> **Notice:** The product build system and CLI are scheduled for implementation in Sprint 03 through Sprint 13. Build commands will be documented here once CMake and binary targets are established.
+Prerequisites: CMake 3.22+, a C++20 compliant compiler (`g++-11+`, `clang-14+`, or MSVC 2022).
+
+### Configure and Build via CMake Presets
+```bash
+# Configure debug build with tests enabled
+cmake --preset default
+
+# Build all targets (core library, CLI skeleton, server daemon, smoke test)
+cmake --build --preset default
+
+# Run test suite
+ctest --preset default
+```
+
+### Manual CLI invocation (Single-command smoke test)
+```bash
+g++ -std=c++20 -Wall -Wextra -Werror -Ilibs/core/include libs/core/src/core.cpp tests/unit/core/test_core_smoke.cpp -o test_core_smoke
+./test_core_smoke
+```
 
 ---
 

@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test-linux:
+    name: Linux GCC C++20 Build & Test
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install build tools and compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++-12
+
+      - name: Configure CMake
+        run: |
+          cmake --preset ci-linux -DCMAKE_CXX_COMPILER=g++-12
+
+      - name: Build All Targets
+        run: |
+          cmake --build --preset ci-linux
+
+      - name: Run Test Suite
+        run: |
+          ctest --preset ci-linux
