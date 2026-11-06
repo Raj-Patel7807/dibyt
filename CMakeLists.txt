@@ -144,10 +144,12 @@ target_link_libraries(dibyt_scheduler PUBLIC dibyt::core dibyt::storage)
 target_compile_features(dibyt_scheduler PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_scheduler)
 
-# Target 8: Thin CLI Application Executable Skeleton
+# Target 8: Thin CLI Application Executable
 add_executable(dibyt-cli
     apps/dibyt-cli/src/main.cpp
+    apps/dibyt-cli/src/cli_parser.cpp
 )
+target_include_directories(dibyt-cli PRIVATE apps/dibyt-cli/src)
 target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
@@ -169,6 +171,15 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_core_smoke PRIVATE dibyt::core)
     dibyt_apply_warnings(test_core_smoke)
     add_test(NAME CoreSmokeTest COMMAND test_core_smoke)
+
+    add_executable(test_cli_parser
+        tests/unit/core/test_cli_parser.cpp
+        apps/dibyt-cli/src/cli_parser.cpp
+    )
+    target_include_directories(test_cli_parser PRIVATE apps/dibyt-cli/src)
+    target_link_libraries(test_cli_parser PRIVATE dibyt::core)
+    dibyt_apply_warnings(test_cli_parser)
+    add_test(NAME CliParserUnitTest COMMAND test_cli_parser)
 
     add_executable(test_manifest
         tests/unit/manifest/test_manifest.cpp
