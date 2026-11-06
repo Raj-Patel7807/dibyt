@@ -231,20 +231,28 @@ target_link_libraries(dibyt-server PRIVATE
     dibyt::scheduler
     dibyt::observability
     dibyt::security
+    dibyt::api
 )
 dibyt_apply_warnings(dibyt-server)
 
 # Target 12: Embedded Management REST API Application
-add_executable(dibyt-api
+add_library(dibyt-api STATIC
     apps/dibyt-api/src/router.cpp
 )
-target_include_directories(dibyt-api PRIVATE apps/dibyt-api/include)
-target_link_libraries(dibyt-api PRIVATE
+
+add_library(dibyt::api ALIAS dibyt-api)
+
+target_include_directories(dibyt-api PUBLIC
+    apps/dibyt-api/include
+)
+
+target_link_libraries(dibyt-api PUBLIC
     dibyt::core
     dibyt::storage
     dibyt::security
     dibyt::observability
 )
+
 dibyt_apply_warnings(dibyt-api)
 
 # Testing & Verification
