@@ -64,22 +64,37 @@ target_link_libraries(dibyt_manifest PUBLIC dibyt::core)
 target_compile_features(dibyt_manifest PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_manifest)
 
-# Target 3: Thin CLI Application Executable Skeleton
+# Target 3: Protocol Wire Codec Subsystem
+add_library(dibyt_protocol STATIC
+    libs/protocol/src/codec.cpp
+)
+add_library(dibyt::protocol ALIAS dibyt_protocol)
+
+target_include_directories(dibyt_protocol
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/protocol/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(dibyt_protocol PUBLIC dibyt::core)
+target_compile_features(dibyt_protocol PUBLIC cxx_std_20)
+dibyt_apply_warnings(dibyt_protocol)
+
+# Target 4: Thin CLI Application Executable Skeleton
 add_executable(dibyt-cli
     apps/dibyt-cli/src/main.cpp
 )
-target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest)
+target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 
-# Target 4: Thin Server Application Executable Skeleton
+# Target 5: Thin Server Application Executable Skeleton
 add_executable(dibyt-server
     apps/dibyt-server/src/main.cpp
 )
-target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest)
+target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol)
 dibyt_apply_warnings(dibyt-server)
 
-# Target 5: Testing & Smoke Verification
+# Target 6: Testing & Smoke Verification
 if(DIBYT_BUILD_TESTS)
     enable_testing()
 
@@ -96,4 +111,11 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_manifest PRIVATE dibyt::core dibyt::manifest)
     dibyt_apply_warnings(test_manifest)
     add_test(NAME ManifestUnitTest COMMAND test_manifest)
+
+    add_executable(test_protocol
+        tests/unit/protocol/test_protocol.cpp
+    )
+    target_link_libraries(test_protocol PRIVATE dibyt::core dibyt::protocol)
+    dibyt_apply_warnings(test_protocol)
+    add_test(NAME ProtocolUnitTest COMMAND test_protocol)
 endif()
