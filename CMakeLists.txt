@@ -225,4 +225,11 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_engine PRIVATE dibyt::core dibyt::manifest dibyt::storage dibyt::scheduler dibyt::transfer dibyt::networking dibyt::protocol)
     dibyt_apply_warnings(test_engine)
     add_test(NAME EngineParallelTransferTest COMMAND test_engine)
+
+    add_executable(test_recovery
+        tests/unit/transfer/test_recovery.cpp
+    )
+    target_link_libraries(test_recovery PRIVATE dibyt::core dibyt::transfer)
+    dibyt_apply_warnings(test_recovery)
+    add_test(NAME FaultRecoveryUnitTest COMMAND test_recovery)
 endif()
