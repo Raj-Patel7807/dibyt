@@ -11,9 +11,28 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-and-test:
-    name: Build & Test (Linux GCC C++20)
+  lint-and-audit:
+    name: Code Hygiene & Secrets Audit
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify No Staged or Committed Secrets
+        run: |
+          echo "Scanning tree for accidental secret patterns..."
+          ! git grep -i -E "BEGIN (RSA|EC|DSA|OPENSSH) PRIVATE KEY" -- ':!tmp'
+          ! git grep -i -E "password[[:space:]]*=[[:space:]]*['\"][^'\"]{6,}['\"]" -- ':!tmp' ':!tests'
+          echo "Secret check passed."
+
+  build-and-test-cpp:
+    name: C++20 Build & Test Suite (GCC 12)
     runs-on: ubuntu-22.04
 
     steps:
@@ -30,20 +49,78 @@ jobs:
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER=gcc-12 \
-            -DCMAKE_CXX_COMPILER=g++-12
+            -DCMAKE_CXX_COMPILER=g++-12 \
+            -DDIBYT_BUILD_TESTS=ON
 
       - name: Build All Targets
         run: |
           cmake --build build
 
-      - name: Run Test Suite
+      - name: Run Full Test Suite (CTest)
         run: |
           ctest --test-dir build --output-on-failure
 
-  package-release:
-    name: Package Release Artifacts & Checksums
+      - name: Execute Benchmark Harness Verification
+        run: |
+          ./build/benchmark_runner
+
+  build-and-test-dashboard:
+    name: Dashboard Web Console Check (TypeScript & Vite)
     runs-on: ubuntu-22.04
-    needs: build-and-test
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: apps/dibyt-dashboard/package-lock.json
+
+      - name: Install Dashboard Dependencies
+        run: |
+          cd apps/dibyt-dashboard
+          npm ci
+
+      - name: Typecheck and Build Dashboard
+        run: |
+          cd apps/dibyt-dashboard
+          npm run build
+
+  container-build:
+    name: Container Build & Validation
+    runs-on: ubuntu-22.04
+    needs: [build-and-test-cpp, build-and-test-dashboard]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Server Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.server
+          push: false
+          tags: dibyt-server:ci-test
+
+      - name: Build Dashboard Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.dashboard
+          push: false
+          tags: dibyt-dashboard:ci-test
+
+  package-release:
+    name: Production Release Packaging & Checksums
+    runs-on: ubuntu-22.04
+    needs: [build-and-test-cpp, build-and-test-dashboard, container-build]
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
@@ -55,21 +132,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build gcc-12 g++-12
 
-      - name: Build Release Binaries
+      - name: Build Optimized Release Binaries
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER=gcc-12 \
             -DCMAKE_CXX_COMPILER=g++-12 \
-            -DDIBYT_BUILD_TESTS=OFF \
-            -DDIBYT_BUILD_BENCHMARKS=OFF
+            -DDIBYT_BUILD_TESTS=OFF
           cmake --build build --target dibyt-server dibyt-cli
 
-      - name: Create Tarball and Generate Checksums
+      - name: Package Distribution Archive with Checksums
         run: |
           mkdir -p release-dist/bin
           cp build/apps/dibyt-server/dibyt-server release-dist/bin/
-          cp build/apps/dibyt-cli/dibyt-cli release-dist/bin/
+          cp build/apps/dibyt-cli/dibyt release-dist/bin/
           cp LICENSE NOTICE README.md release-dist/
           ARCH=$(uname -m)
           TAG_NAME=${GITHUB_REF#refs/tags/}
@@ -78,7 +154,7 @@ jobs:
           sha256sum "${ARCHIVE_NAME}" > "${ARCHIVE_NAME}.sha256"
           echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
 
-      - name: Upload Artifacts to GitHub Release
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -86,31 +162,3 @@ jobs:
             ${{ env.ARCHIVE_NAME }}.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  container-build:
-    name: Container Build & Vulnerability Scan
-    runs-on: ubuntu-22.04
-    needs: build-and-test
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Server Image (Validation)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: deploy/docker/Dockerfile.server
-          push: false
-          tags: dibyt-server:test
-
-      - name: Build Dashboard Image (Validation)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: deploy/docker/Dockerfile.dashboard
-          push: false
-          tags: dibyt-dashboard:test
