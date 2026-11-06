@@ -128,22 +128,37 @@ target_link_libraries(dibyt_storage PUBLIC dibyt::core)
 target_compile_features(dibyt_storage PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_storage)
 
-# Target 7: Thin CLI Application Executable Skeleton
+# Target 7: Dynamic Work Scheduler and Worker Pool Subsystem
+add_library(dibyt_scheduler STATIC
+    libs/scheduler/src/scheduler.cpp
+)
+add_library(dibyt::scheduler ALIAS dibyt_scheduler)
+
+target_include_directories(dibyt_scheduler
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/scheduler/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(dibyt_scheduler PUBLIC dibyt::core dibyt::storage)
+target_compile_features(dibyt_scheduler PUBLIC cxx_std_20)
+dibyt_apply_warnings(dibyt_scheduler)
+
+# Target 8: Thin CLI Application Executable Skeleton
 add_executable(dibyt-cli
     apps/dibyt-cli/src/main.cpp
 )
-target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage)
+target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 
-# Target 8: Thin Server Application Executable Skeleton
+# Target 9: Thin Server Application Executable Skeleton
 add_executable(dibyt-server
     apps/dibyt-server/src/main.cpp
 )
-target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage)
+target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler)
 dibyt_apply_warnings(dibyt-server)
 
-# Target 9: Testing & Smoke Verification
+# Target 10: Testing & Smoke Verification
 if(DIBYT_BUILD_TESTS)
     enable_testing()
 
@@ -195,4 +210,11 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_checkpoint PRIVATE dibyt::core dibyt::storage dibyt::transfer)
     dibyt_apply_warnings(test_checkpoint)
     add_test(NAME CheckpointUnitTest COMMAND test_checkpoint)
+
+    add_executable(test_scheduler
+        tests/unit/scheduler/test_scheduler.cpp
+    )
+    target_link_libraries(test_scheduler PRIVATE dibyt::core dibyt::storage dibyt::scheduler)
+    dibyt_apply_warnings(test_scheduler)
+    add_test(NAME SchedulerUnitTest COMMAND test_scheduler)
 endif()
