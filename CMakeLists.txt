@@ -97,9 +97,10 @@ endif()
 target_compile_features(dibyt_networking PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_networking)
 
-# Target 5: Transfer Staging and Atomic Finalization Subsystem
+# Target 5: Transfer Staging, Checkpoints and Atomic Finalization Subsystem
 add_library(dibyt_transfer STATIC
     libs/transfer/src/staging.cpp
+    libs/transfer/src/checkpoint.cpp
 )
 add_library(dibyt::transfer ALIAS dibyt_transfer)
 
@@ -108,7 +109,7 @@ target_include_directories(dibyt_transfer
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/transfer/include>
         $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(dibyt_transfer PUBLIC dibyt::core dibyt::manifest)
+target_link_libraries(dibyt_transfer PUBLIC dibyt::core dibyt::manifest dibyt::storage)
 target_compile_features(dibyt_transfer PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_transfer)
 
@@ -187,4 +188,11 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_database PRIVATE dibyt::core dibyt::storage)
     dibyt_apply_warnings(test_database)
     add_test(NAME StorageDatabaseUnitTest COMMAND test_database)
+
+    add_executable(test_checkpoint
+        tests/unit/transfer/test_checkpoint.cpp
+    )
+    target_link_libraries(test_checkpoint PRIVATE dibyt::core dibyt::storage dibyt::transfer)
+    dibyt_apply_warnings(test_checkpoint)
+    add_test(NAME CheckpointUnitTest COMMAND test_checkpoint)
 endif()
