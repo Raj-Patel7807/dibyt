@@ -1,0 +1,30 @@
+# Build and development artifacts
+build/
+bin/
+obj/
+*.exe
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+
+# Node.js and web dashboard dependencies
+node_modules/
+dist/
+.npm/
+
+# Git and OS metadata
+.git
+.github
+.vscode
+.idea
+*.DS_Store
+Thumbs.db
+
+# Documentation and design assets not needed in container image
+docs/
+legacy/
+benchmarks/
+tmp/
+*.md
