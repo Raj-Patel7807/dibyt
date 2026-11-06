@@ -305,4 +305,17 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_api PRIVATE dibyt::core dibyt::manifest dibyt::storage dibyt::security dibyt::observability)
     dibyt_apply_warnings(test_api)
     add_test(NAME RestApiUnitTest COMMAND test_api)
+
+    add_executable(test_fault_injection
+        tests/fault_injection/test_fault_injection.cpp
+    )
+    target_link_libraries(test_fault_injection PRIVATE dibyt::core dibyt::storage dibyt::transfer)
+    dibyt_apply_warnings(test_fault_injection)
+    add_test(NAME FaultInjectionUnitTest COMMAND test_fault_injection)
+
+    add_executable(benchmark_runner
+        benchmarks/harness/benchmark_runner.cpp
+    )
+    target_link_libraries(benchmark_runner PRIVATE dibyt::core dibyt::manifest dibyt::storage dibyt::scheduler dibyt::transfer dibyt::networking dibyt::protocol)
+    dibyt_apply_warnings(benchmark_runner)
 endif()
