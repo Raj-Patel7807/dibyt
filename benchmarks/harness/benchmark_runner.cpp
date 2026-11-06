@@ -41,12 +41,20 @@ int main(int argc, char* argv[]) {
     // Scan manifest
     dibyt::manifest::ScannerOptions scan_opts;
     dibyt::manifest::Manifest manifest;
-    dibyt::manifest::build_collection_manifest(src_dir, "bench_collection", scan_opts, manifest);
+    auto scan_err = dibyt::manifest::build_collection_manifest(src_dir, "bench_collection", scan_opts, manifest);
+    if (scan_err != dibyt::core::ErrorCode::kOk) {
+        std::cerr << "Failed to build benchmark manifest\n";
+        return 1;
+    }
 
     // Run benchmark trial
     std::filesystem::path db_path = bench_root / "meta.db";
     dibyt::storage::Database db;
-    db.open(db_path);
+    auto db_err = db.open(db_path);
+    if (db_err != dibyt::core::ErrorCode::kOk) {
+        std::cerr << "Failed to open benchmark database\n";
+        return 1;
+    }
 
     dibyt::transfer::EngineConfig cfg;
     cfg.num_workers = concurrency;

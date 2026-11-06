@@ -194,29 +194,29 @@ uint32_t TaskScheduler::reclaim_expired_leases() {
 
 size_t TaskScheduler::pending_count() const noexcept {
     std::lock_guard<std::mutex> lock(mutex_);
-    return std::count_if(task_queue_.begin(), task_queue_.end(),
+    return static_cast<size_t>(std::count_if(task_queue_.begin(), task_queue_.end(),
                          [](const ScheduledTask& t) {
                              return t.state == LifecycleState::kPending || 
                                     t.state == LifecycleState::kRetryableFailed;
-                         });
+                         }));
 }
 
 size_t TaskScheduler::active_lease_count() const noexcept {
     std::lock_guard<std::mutex> lock(mutex_);
-    return std::count_if(task_queue_.begin(), task_queue_.end(),
+    return static_cast<size_t>(std::count_if(task_queue_.begin(), task_queue_.end(),
                          [](const ScheduledTask& t) {
                              return t.state == LifecycleState::kLeased || 
                                     t.state == LifecycleState::kReceiving ||
                                     t.state == LifecycleState::kVerifying;
-                         });
+                         }));
 }
 
 size_t TaskScheduler::completed_count() const noexcept {
     std::lock_guard<std::mutex> lock(mutex_);
-    return std::count_if(task_queue_.begin(), task_queue_.end(),
+    return static_cast<size_t>(std::count_if(task_queue_.begin(), task_queue_.end(),
                          [](const ScheduledTask& t) {
                              return t.state == LifecycleState::kComplete;
-                         });
+                         }));
 }
 
 } // namespace dibyt::scheduler
