@@ -49,22 +49,37 @@ target_include_directories(dibyt_core
 target_compile_features(dibyt_core PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_core)
 
-# Target 2: Thin CLI Application Executable Skeleton
+# Target 2: Collection Scanner and Manifest Subsystem
+add_library(dibyt_manifest STATIC
+    libs/manifest/src/manifest.cpp
+)
+add_library(dibyt::manifest ALIAS dibyt_manifest)
+
+target_include_directories(dibyt_manifest
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/manifest/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(dibyt_manifest PUBLIC dibyt::core)
+target_compile_features(dibyt_manifest PUBLIC cxx_std_20)
+dibyt_apply_warnings(dibyt_manifest)
+
+# Target 3: Thin CLI Application Executable Skeleton
 add_executable(dibyt-cli
     apps/dibyt-cli/src/main.cpp
 )
-target_link_libraries(dibyt-cli PRIVATE dibyt::core)
+target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 
-# Target 3: Thin Server Application Executable Skeleton
+# Target 4: Thin Server Application Executable Skeleton
 add_executable(dibyt-server
     apps/dibyt-server/src/main.cpp
 )
-target_link_libraries(dibyt-server PRIVATE dibyt::core)
+target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest)
 dibyt_apply_warnings(dibyt-server)
 
-# Target 4: Testing & Smoke Verification
+# Target 5: Testing & Smoke Verification
 if(DIBYT_BUILD_TESTS)
     enable_testing()
 
@@ -73,6 +88,12 @@ if(DIBYT_BUILD_TESTS)
     )
     target_link_libraries(test_core_smoke PRIVATE dibyt::core)
     dibyt_apply_warnings(test_core_smoke)
-
     add_test(NAME CoreSmokeTest COMMAND test_core_smoke)
+
+    add_executable(test_manifest
+        tests/unit/manifest/test_manifest.cpp
+    )
+    target_link_libraries(test_manifest PRIVATE dibyt::core dibyt::manifest)
+    dibyt_apply_warnings(test_manifest)
+    add_test(NAME ManifestUnitTest COMMAND test_manifest)
 endif()
