@@ -112,22 +112,37 @@ target_link_libraries(dibyt_transfer PUBLIC dibyt::core dibyt::manifest)
 target_compile_features(dibyt_transfer PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_transfer)
 
-# Target 6: Thin CLI Application Executable Skeleton
+# Target 6: Persistent Storage and Metadata Subsystem
+add_library(dibyt_storage STATIC
+    libs/storage/src/database.cpp
+)
+add_library(dibyt::storage ALIAS dibyt_storage)
+
+target_include_directories(dibyt_storage
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/storage/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(dibyt_storage PUBLIC dibyt::core)
+target_compile_features(dibyt_storage PUBLIC cxx_std_20)
+dibyt_apply_warnings(dibyt_storage)
+
+# Target 7: Thin CLI Application Executable Skeleton
 add_executable(dibyt-cli
     apps/dibyt-cli/src/main.cpp
 )
-target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer)
+target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 
-# Target 7: Thin Server Application Executable Skeleton
+# Target 8: Thin Server Application Executable Skeleton
 add_executable(dibyt-server
     apps/dibyt-server/src/main.cpp
 )
-target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer)
+target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage)
 dibyt_apply_warnings(dibyt-server)
 
-# Target 8: Testing & Smoke Verification
+# Target 9: Testing & Smoke Verification
 if(DIBYT_BUILD_TESTS)
     enable_testing()
 
@@ -165,4 +180,11 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_staging PRIVATE dibyt::core dibyt::manifest dibyt::transfer)
     dibyt_apply_warnings(test_staging)
     add_test(NAME StagingUnitTest COMMAND test_staging)
+
+    add_executable(test_database
+        tests/unit/storage/test_database.cpp
+    )
+    target_link_libraries(test_database PRIVATE dibyt::core dibyt::storage)
+    dibyt_apply_warnings(test_database)
+    add_test(NAME StorageDatabaseUnitTest COMMAND test_database)
 endif()
