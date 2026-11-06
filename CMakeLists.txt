@@ -35,6 +35,19 @@ function(dibyt_apply_warnings TARGET_NAME)
     endif()
 endfunction()
 
+# Configure test targets with strict warnings and active assertions.
+function(dibyt_configure_test TARGET_NAME)
+    dibyt_apply_warnings(${TARGET_NAME})
+
+    # Release builds define NDEBUG, which disables assert().
+    # Undefine it for test targets so assertions remain active.
+    if(MSVC)
+        target_compile_options(${TARGET_NAME} PRIVATE /UNDEBUG)
+    else()
+        target_compile_options(${TARGET_NAME} PRIVATE -UNDEBUG)
+    endif()
+endfunction()
+
 # Target 1: Core Domain & Primitives Library
 add_library(dibyt_core STATIC
     libs/core/src/core.cpp
@@ -91,9 +104,11 @@ target_include_directories(dibyt_networking
         $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(dibyt_networking PUBLIC dibyt::core dibyt::protocol)
+
 if(WIN32)
     target_link_libraries(dibyt_networking PUBLIC ws2_32)
 endif()
+
 target_compile_features(dibyt_networking PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_networking)
 
@@ -110,7 +125,14 @@ target_include_directories(dibyt_transfer
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/transfer/include>
         $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(dibyt_transfer PUBLIC dibyt::core dibyt::manifest dibyt::storage dibyt::scheduler dibyt::networking dibyt::protocol)
+target_link_libraries(dibyt_transfer PUBLIC
+    dibyt::core
+    dibyt::manifest
+    dibyt::storage
+    dibyt::scheduler
+    dibyt::networking
+    dibyt::protocol
+)
 target_compile_features(dibyt_transfer PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_transfer)
 
@@ -181,7 +203,17 @@ add_executable(dibyt-cli
     apps/dibyt-cli/src/cli_parser.cpp
 )
 target_include_directories(dibyt-cli PRIVATE apps/dibyt-cli/src)
-target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler dibyt::observability dibyt::security)
+target_link_libraries(dibyt-cli PRIVATE
+    dibyt::core
+    dibyt::manifest
+    dibyt::protocol
+    dibyt::networking
+    dibyt::transfer
+    dibyt::storage
+    dibyt::scheduler
+    dibyt::observability
+    dibyt::security
+)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 
@@ -189,7 +221,17 @@ set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 add_executable(dibyt-server
     apps/dibyt-server/src/main.cpp
 )
-target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler dibyt::observability dibyt::security)
+target_link_libraries(dibyt-server PRIVATE
+    dibyt::core
+    dibyt::manifest
+    dibyt::protocol
+    dibyt::networking
+    dibyt::transfer
+    dibyt::storage
+    dibyt::scheduler
+    dibyt::observability
+    dibyt::security
+)
 dibyt_apply_warnings(dibyt-server)
 
 # Target 12: Embedded Management REST API Application
@@ -197,10 +239,15 @@ add_executable(dibyt-api
     apps/dibyt-api/src/router.cpp
 )
 target_include_directories(dibyt-api PRIVATE apps/dibyt-api/include)
-target_link_libraries(dibyt-api PRIVATE dibyt::core dibyt::storage dibyt::security dibyt::observability)
+target_link_libraries(dibyt-api PRIVATE
+    dibyt::core
+    dibyt::storage
+    dibyt::security
+    dibyt::observability
+)
 dibyt_apply_warnings(dibyt-api)
 
-# Target 10: Testing & Smoke Verification
+# Testing & Verification
 if(DIBYT_BUILD_TESTS)
     enable_testing()
 
@@ -208,7 +255,7 @@ if(DIBYT_BUILD_TESTS)
         tests/unit/core/test_core_smoke.cpp
     )
     target_link_libraries(test_core_smoke PRIVATE dibyt::core)
-    dibyt_apply_warnings(test_core_smoke)
+    dibyt_configure_test(test_core_smoke)
     add_test(NAME CoreSmokeTest COMMAND test_core_smoke)
 
     add_executable(test_cli_parser
@@ -217,84 +264,92 @@ if(DIBYT_BUILD_TESTS)
     )
     target_include_directories(test_cli_parser PRIVATE apps/dibyt-cli/src)
     target_link_libraries(test_cli_parser PRIVATE dibyt::core)
-    dibyt_apply_warnings(test_cli_parser)
+    dibyt_configure_test(test_cli_parser)
     add_test(NAME CliParserUnitTest COMMAND test_cli_parser)
 
     add_executable(test_manifest
         tests/unit/manifest/test_manifest.cpp
     )
     target_link_libraries(test_manifest PRIVATE dibyt::core dibyt::manifest)
-    dibyt_apply_warnings(test_manifest)
+    dibyt_configure_test(test_manifest)
     add_test(NAME ManifestUnitTest COMMAND test_manifest)
 
     add_executable(test_protocol
         tests/unit/protocol/test_protocol.cpp
     )
     target_link_libraries(test_protocol PRIVATE dibyt::core dibyt::protocol)
-    dibyt_apply_warnings(test_protocol)
+    dibyt_configure_test(test_protocol)
     add_test(NAME ProtocolUnitTest COMMAND test_protocol)
 
     add_executable(test_tcp
         tests/unit/networking/test_tcp.cpp
     )
     target_link_libraries(test_tcp PRIVATE dibyt::core dibyt::protocol dibyt::networking)
-    dibyt_apply_warnings(test_tcp)
+    dibyt_configure_test(test_tcp)
     add_test(NAME TcpTransportUnitTest COMMAND test_tcp)
 
     add_executable(test_staging
         tests/unit/transfer/test_staging.cpp
     )
     target_link_libraries(test_staging PRIVATE dibyt::core dibyt::manifest dibyt::transfer)
-    dibyt_apply_warnings(test_staging)
+    dibyt_configure_test(test_staging)
     add_test(NAME StagingUnitTest COMMAND test_staging)
 
     add_executable(test_database
         tests/unit/storage/test_database.cpp
     )
     target_link_libraries(test_database PRIVATE dibyt::core dibyt::storage)
-    dibyt_apply_warnings(test_database)
+    dibyt_configure_test(test_database)
     add_test(NAME StorageDatabaseUnitTest COMMAND test_database)
 
     add_executable(test_checkpoint
         tests/unit/transfer/test_checkpoint.cpp
     )
     target_link_libraries(test_checkpoint PRIVATE dibyt::core dibyt::storage dibyt::transfer)
-    dibyt_apply_warnings(test_checkpoint)
+    dibyt_configure_test(test_checkpoint)
     add_test(NAME CheckpointUnitTest COMMAND test_checkpoint)
 
     add_executable(test_scheduler
         tests/unit/scheduler/test_scheduler.cpp
     )
     target_link_libraries(test_scheduler PRIVATE dibyt::core dibyt::storage dibyt::scheduler)
-    dibyt_apply_warnings(test_scheduler)
+    dibyt_configure_test(test_scheduler)
     add_test(NAME SchedulerUnitTest COMMAND test_scheduler)
 
     add_executable(test_engine
         tests/unit/transfer/test_engine.cpp
     )
-    target_link_libraries(test_engine PRIVATE dibyt::core dibyt::manifest dibyt::storage dibyt::scheduler dibyt::transfer dibyt::networking dibyt::protocol)
-    dibyt_apply_warnings(test_engine)
+    target_link_libraries(test_engine PRIVATE
+        dibyt::core
+        dibyt::manifest
+        dibyt::storage
+        dibyt::scheduler
+        dibyt::transfer
+        dibyt::networking
+        dibyt::protocol
+    )
+    dibyt_configure_test(test_engine)
     add_test(NAME EngineParallelTransferTest COMMAND test_engine)
 
     add_executable(test_recovery
         tests/unit/transfer/test_recovery.cpp
     )
     target_link_libraries(test_recovery PRIVATE dibyt::core dibyt::transfer)
-    dibyt_apply_warnings(test_recovery)
+    dibyt_configure_test(test_recovery)
     add_test(NAME FaultRecoveryUnitTest COMMAND test_recovery)
 
     add_executable(test_observability
         tests/unit/observability/test_observability.cpp
     )
     target_link_libraries(test_observability PRIVATE dibyt::core dibyt::observability)
-    dibyt_apply_warnings(test_observability)
+    dibyt_configure_test(test_observability)
     add_test(NAME ObservabilityUnitTest COMMAND test_observability)
 
     add_executable(test_security
         tests/unit/security/test_security.cpp
     )
     target_link_libraries(test_security PRIVATE dibyt::core dibyt::manifest dibyt::security)
-    dibyt_apply_warnings(test_security)
+    dibyt_configure_test(test_security)
     add_test(NAME SecurityUnitTest COMMAND test_security)
 
     add_executable(test_api
@@ -302,20 +357,34 @@ if(DIBYT_BUILD_TESTS)
         apps/dibyt-api/src/router.cpp
     )
     target_include_directories(test_api PRIVATE apps/dibyt-api/include)
-    target_link_libraries(test_api PRIVATE dibyt::core dibyt::manifest dibyt::storage dibyt::security dibyt::observability)
-    dibyt_apply_warnings(test_api)
+    target_link_libraries(test_api PRIVATE
+        dibyt::core
+        dibyt::manifest
+        dibyt::storage
+        dibyt::security
+        dibyt::observability
+    )
+    dibyt_configure_test(test_api)
     add_test(NAME RestApiUnitTest COMMAND test_api)
 
     add_executable(test_fault_injection
         tests/fault_injection/test_fault_injection.cpp
     )
     target_link_libraries(test_fault_injection PRIVATE dibyt::core dibyt::storage dibyt::transfer)
-    dibyt_apply_warnings(test_fault_injection)
+    dibyt_configure_test(test_fault_injection)
     add_test(NAME FaultInjectionUnitTest COMMAND test_fault_injection)
 
     add_executable(benchmark_runner
         benchmarks/harness/benchmark_runner.cpp
     )
-    target_link_libraries(benchmark_runner PRIVATE dibyt::core dibyt::manifest dibyt::storage dibyt::scheduler dibyt::transfer dibyt::networking dibyt::protocol)
+    target_link_libraries(benchmark_runner PRIVATE
+        dibyt::core
+        dibyt::manifest
+        dibyt::storage
+        dibyt::scheduler
+        dibyt::transfer
+        dibyt::networking
+        dibyt::protocol
+    )
     dibyt_apply_warnings(benchmark_runner)
 endif()
