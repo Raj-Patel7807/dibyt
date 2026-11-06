@@ -97,22 +97,37 @@ endif()
 target_compile_features(dibyt_networking PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_networking)
 
-# Target 5: Thin CLI Application Executable Skeleton
+# Target 5: Transfer Staging and Atomic Finalization Subsystem
+add_library(dibyt_transfer STATIC
+    libs/transfer/src/staging.cpp
+)
+add_library(dibyt::transfer ALIAS dibyt_transfer)
+
+target_include_directories(dibyt_transfer
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/transfer/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(dibyt_transfer PUBLIC dibyt::core dibyt::manifest)
+target_compile_features(dibyt_transfer PUBLIC cxx_std_20)
+dibyt_apply_warnings(dibyt_transfer)
+
+# Target 6: Thin CLI Application Executable Skeleton
 add_executable(dibyt-cli
     apps/dibyt-cli/src/main.cpp
 )
-target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking)
+target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 
-# Target 6: Thin Server Application Executable Skeleton
+# Target 7: Thin Server Application Executable Skeleton
 add_executable(dibyt-server
     apps/dibyt-server/src/main.cpp
 )
-target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking)
+target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer)
 dibyt_apply_warnings(dibyt-server)
 
-# Target 7: Testing & Smoke Verification
+# Target 8: Testing & Smoke Verification
 if(DIBYT_BUILD_TESTS)
     enable_testing()
 
@@ -143,4 +158,11 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_tcp PRIVATE dibyt::core dibyt::protocol dibyt::networking)
     dibyt_apply_warnings(test_tcp)
     add_test(NAME TcpTransportUnitTest COMMAND test_tcp)
+
+    add_executable(test_staging
+        tests/unit/transfer/test_staging.cpp
+    )
+    target_link_libraries(test_staging PRIVATE dibyt::core dibyt::manifest dibyt::transfer)
+    dibyt_apply_warnings(test_staging)
+    add_test(NAME StagingUnitTest COMMAND test_staging)
 endif()
