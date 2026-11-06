@@ -160,21 +160,36 @@ target_link_libraries(dibyt_observability PUBLIC dibyt::core)
 target_compile_features(dibyt_observability PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_observability)
 
-# Target 9: Thin CLI Application Executable
+# Target 9: Security Foundations, Authentication, and Filesystem Jail Subsystem
+add_library(dibyt_security STATIC
+    libs/security/src/auth.cpp
+)
+add_library(dibyt::security ALIAS dibyt_security)
+
+target_include_directories(dibyt_security
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/security/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(dibyt_security PUBLIC dibyt::core dibyt::manifest)
+target_compile_features(dibyt_security PUBLIC cxx_std_20)
+dibyt_apply_warnings(dibyt_security)
+
+# Target 10: Thin CLI Application Executable
 add_executable(dibyt-cli
     apps/dibyt-cli/src/main.cpp
     apps/dibyt-cli/src/cli_parser.cpp
 )
 target_include_directories(dibyt-cli PRIVATE apps/dibyt-cli/src)
-target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler dibyt::observability)
+target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler dibyt::observability dibyt::security)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 
-# Target 10: Thin Server Application Executable Skeleton
+# Target 11: Thin Server Application Executable Skeleton
 add_executable(dibyt-server
     apps/dibyt-server/src/main.cpp
 )
-target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler dibyt::observability)
+target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler dibyt::observability dibyt::security)
 dibyt_apply_warnings(dibyt-server)
 
 # Target 10: Testing & Smoke Verification
@@ -266,4 +281,11 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_observability PRIVATE dibyt::core dibyt::observability)
     dibyt_apply_warnings(test_observability)
     add_test(NAME ObservabilityUnitTest COMMAND test_observability)
+
+    add_executable(test_security
+        tests/unit/security/test_security.cpp
+    )
+    target_link_libraries(test_security PRIVATE dibyt::core dibyt::manifest dibyt::security)
+    dibyt_apply_warnings(test_security)
+    add_test(NAME SecurityUnitTest COMMAND test_security)
 endif()
