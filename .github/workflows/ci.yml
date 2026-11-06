@@ -16,35 +16,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  code-audit:
-    name: Code Hygiene & Secrets Audit
+  audit:
+    name: Secrets Audit
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Scan repository for accidentally exposed credentials
+      - name: Scan for exposed credentials
         run: |
-          echo "Scanning tracked files for private keys or hardcoded credentials..."
           ! git grep -i -E "BEGIN (RSA|EC|DSA|OPENSSH) PRIVATE KEY" -- ':!tmp'
           ! git grep -i -E "password[[:space:]]*=[[:space:]]*['\"][^'\"]{6,}['\"]" -- ':!tmp' ':!tests'
-          echo "Secrets audit clean."
+          echo "Clean."
 
-  cpp-build-and-test:
-    name: C++20 Core Build & Test Suite
+  cpp:
+    name: C++ Build & Tests
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install build tools and GCC 12 compiler
+      - name: Install GCC 12 & CMake
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build gcc-12 g++-12
 
-      - name: Configure CMake with strict compiler diagnostics
+      - name: Configure
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -52,95 +49,83 @@ jobs:
             -DCMAKE_CXX_COMPILER=g++-12 \
             -DDIBYT_BUILD_TESTS=ON
 
-      - name: Compile all libraries, CLI, server, and test targets
-        run: |
-          cmake --build build
+      - name: Build
+        run: cmake --build build
 
-      - name: Execute CTest regression suite
-        run: |
-          ctest --test-dir build --output-on-failure
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
 
-      - name: Execute reproducible throughput benchmark runner
-        run: |
-          ./build/benchmark_runner
+      - name: Benchmark
+        run: ./build/benchmark_runner
 
-  dashboard-quality-gate:
-    name: Web Dashboard Quality Gate
+  dashboard:
+    name: Dashboard (Lint / Test / Build)
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js 20 environment
+      - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
           cache-dependency-path: apps/dibyt-dashboard/package-lock.json
 
-      - name: Install dashboard dependencies
-        run: |
-          npm --prefix apps/dibyt-dashboard ci
+      - name: Install dependencies
+        run: npm --prefix apps/dibyt-dashboard ci
 
-      - name: Run ESLint code quality checks
-        run: |
-          npm --prefix apps/dibyt-dashboard run lint
+      - name: Lint
+        run: npm --prefix apps/dibyt-dashboard run lint
 
-      - name: Run Vitest unit tests
-        run: |
-          npm --prefix apps/dibyt-dashboard run test
+      - name: Test
+        run: npm --prefix apps/dibyt-dashboard run test
 
-      - name: Verify TypeScript types and build production bundle
-        run: |
-          npm --prefix apps/dibyt-dashboard run build
+      - name: Build
+        run: npm --prefix apps/dibyt-dashboard run build
 
-  container-build:
-    name: Container Build & Packaging Validation
+  containers:
+    name: Docker Builds
     runs-on: ubuntu-22.04
-    # Runs when code hygiene, C++ suite, and Web dashboard quality gates pass
-    needs: [code-audit, cpp-build-and-test, dashboard-quality-gate]
+    needs: [audit, cpp, dashboard]
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+      - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build server multi-stage container
+      - name: Build server image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile
           push: false
-          tags: dibyt-server:ci-test
+          tags: dibyt-server:ci
 
-      - name: Build dashboard unprivileged container
+      - name: Build dashboard image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: deploy/docker/Dockerfile.dashboard
           push: false
-          tags: dibyt-dashboard:ci-test
+          tags: dibyt-dashboard:ci
 
-  release-publish:
-    name: Release Packaging & Checksums
+  release:
+    name: Release (tags only)
     runs-on: ubuntu-22.04
-    needs: [container-build]
-    # Release assets are published strictly when a version tag (e.g. v0.1.0) is pushed
+    needs: [containers]
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install build tools
+      - name: Install GCC 12 & CMake
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build gcc-12 g++-12
 
-      - name: Build clean distribution binaries
+      - name: Build release binaries
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -149,7 +134,7 @@ jobs:
             -DDIBYT_BUILD_TESTS=OFF
           cmake --build build --target dibyt-server dibyt-cli
 
-      - name: Package tarball and generate SHA-256 checksums
+      - name: Package & checksum
         run: |
           mkdir -p release-dist/bin
           cp build/apps/dibyt-server/dibyt-server release-dist/bin/
@@ -162,7 +147,7 @@ jobs:
           sha256sum "${ARCHIVE_NAME}" > "${ARCHIVE_NAME}.sha256"
           echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
 
-      - name: Publish artifacts to GitHub Releases
+      - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           files: |
