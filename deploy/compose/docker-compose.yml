@@ -1,0 +1,55 @@
+services:
+  dibyt-server:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.server
+    image: ghcr.io/rajpatel/dibyt-server:latest
+    container_name: dibyt-server
+    restart: unless-stopped
+    ports:
+      # HTTP Control Plane (REST API, Prometheus metrics, Health probe)
+      - "127.0.0.1:8080:8080"
+      # TCP Data Plane (Binary high-throughput parallel transfer)
+      - "0.0.0.0:9080:9080"
+    volumes:
+      # Persistent storage: SQLite databases, checkpoints, received files, and staging quarantine
+      - dibyt_data:/var/lib/dibyt
+      # Read-only configuration file
+      - ./config/dibyt.env:/etc/dibyt/dibyt.env:ro
+    environment:
+      - DIBYT_ENV=production
+      - DIBYT_LOG_LEVEL=info
+      - DIBYT_DATA_DIR=/var/lib/dibyt/data
+      - DIBYT_STAGING_DIR=/var/lib/dibyt/staging
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  dibyt-dashboard:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.dashboard
+    image: ghcr.io/rajpatel/dibyt-dashboard:latest
+    container_name: dibyt-dashboard
+    restart: unless-stopped
+    ports:
+      # Web console exposed locally or behind reverse proxy
+      - "127.0.0.1:3000:8080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      dibyt-server:
+        condition: service_healthy
+
+volumes:
+  dibyt_data:
+    driver: local

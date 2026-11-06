@@ -78,6 +78,31 @@ Dibyt provides both high-speed bulk data transfer and operational management (se
 3. **Dedicated Control Plane (HTTP) & Data Plane (TCP) (Chosen):** Using raw TCP with custom framing for data transfer, and standard HTTP/JSON for management and telemetry.
 
 ### Decision Outcome
+Chosen option: **Dedicated Control Plane & Data Plane**.
+- **Positive Consequences:** Bounded resource consumption; raw TCP zero-copy streaming achieves saturating link speeds; HTTP interface allows standard tooling, Prometheus metrics scrapers, and web consoles to connect without custom binary parsing.
+- **Negative Consequences / Trade-offs:** Requires two ports (default 8080 HTTP and 9080 TCP) and clear firewall routing instructions.
+
+---
+
+## ADR-0006: Container Packaging & Self-Hosted Deployment Isolation
+
+- **Status:** Accepted
+- **Date:** 2026-11-06
+- **Deciders:** Raj Patel (Project Maintainer)
+
+### Context & Problem Statement
+Self-hosted users require repeatable, isolated deployments without complicated dependency compilation on host machines. However, file transfer systems need persistent file storage and direct raw TCP ingress that standard container abstractions or layer-7 web PaaS routers do not natively support.
+
+### Decision Drivers
+- High operational isolation: containerized daemons must run unprivileged (non-root) and drop all Linux capabilities (`cap_drop: ALL`).
+- Data durability: SQLite databases, active checkpoints, and downloaded data must survive container restarts and upgrades.
+- Network transparency: TCP binary socket (port 9080) requires layer-4 ingress without intermediate HTTP proxy buffering.
+
+### Decision Outcome
+Chosen option: **Multi-stage Docker builds with dedicated persistent volume mounts and drop-privileges security profiles**.
+- **Positive Consequences:** Reproducible container builds from Ubuntu 22.04 / Node.js; default unprivileged non-root user `dibyt:dibyt` (UID 10001); read-only configuration mounts (`:ro`); clean systemd service alternative for bare-metal VPS installations.
+- **Negative Consequences / Trade-offs:** Requires operators to configure layer-4 firewall rules for port 9080 rather than using simple HTTP reverse proxies alone.
+
 Chosen option: **Dedicated Control Plane (HTTP) & Data Plane (TCP)**.
 - **Positive Consequences:** Maximum bulk throughput using raw binary framing and 64 KiB chunks; clean telemetry scraping via Prometheus and standard JSON endpoints; bulk payloads never transit HTTP stacks.
 - **Negative Consequences / Trade-offs:** Requires two ports (e.g., 9080 for data plane TCP, 9081 for management HTTP).

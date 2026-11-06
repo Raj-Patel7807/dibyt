@@ -1,0 +1,42 @@
+[Unit]
+Description=Dibyt High-Throughput Reliable File Transfer Daemon
+Documentation=https://github.com/rajpatel/dibyt
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dibyt
+Group=dibyt
+
+# Sandboxing and security privileges
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+PrivateTmp=true
+PrivateDevices=true
+MemoryDenyWriteExecute=true
+NoNewPrivileges=true
+CapabilityBoundingSet=
+
+# Explicit read/write directory allowances
+ReadWritePaths=/var/lib/dibyt /var/log/dibyt
+ConfigurationDirectory=dibyt
+StateDirectory=dibyt
+LogsDirectory=dibyt
+
+# Process lifecycle
+EnvironmentFile=-/etc/dibyt/dibyt.env
+ExecStart=/usr/local/bin/dibyt-server --config /etc/dibyt/dibyt.env
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=30s
+
+# Resource limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
