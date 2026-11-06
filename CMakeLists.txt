@@ -79,22 +79,40 @@ target_link_libraries(dibyt_protocol PUBLIC dibyt::core)
 target_compile_features(dibyt_protocol PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_protocol)
 
-# Target 4: Thin CLI Application Executable Skeleton
+# Target 4: Networking and TCP Transport Subsystem
+add_library(dibyt_networking STATIC
+    libs/networking/src/tcp.cpp
+)
+add_library(dibyt::networking ALIAS dibyt_networking)
+
+target_include_directories(dibyt_networking
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/networking/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(dibyt_networking PUBLIC dibyt::core dibyt::protocol)
+if(WIN32)
+    target_link_libraries(dibyt_networking PUBLIC ws2_32)
+endif()
+target_compile_features(dibyt_networking PUBLIC cxx_std_20)
+dibyt_apply_warnings(dibyt_networking)
+
+# Target 5: Thin CLI Application Executable Skeleton
 add_executable(dibyt-cli
     apps/dibyt-cli/src/main.cpp
 )
-target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol)
+target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 
-# Target 5: Thin Server Application Executable Skeleton
+# Target 6: Thin Server Application Executable Skeleton
 add_executable(dibyt-server
     apps/dibyt-server/src/main.cpp
 )
-target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol)
+target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking)
 dibyt_apply_warnings(dibyt-server)
 
-# Target 6: Testing & Smoke Verification
+# Target 7: Testing & Smoke Verification
 if(DIBYT_BUILD_TESTS)
     enable_testing()
 
@@ -118,4 +136,11 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_protocol PRIVATE dibyt::core dibyt::protocol)
     dibyt_apply_warnings(test_protocol)
     add_test(NAME ProtocolUnitTest COMMAND test_protocol)
+
+    add_executable(test_tcp
+        tests/unit/networking/test_tcp.cpp
+    )
+    target_link_libraries(test_tcp PRIVATE dibyt::core dibyt::protocol dibyt::networking)
+    dibyt_apply_warnings(test_tcp)
+    add_test(NAME TcpTransportUnitTest COMMAND test_tcp)
 endif()
