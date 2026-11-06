@@ -1,0 +1,51 @@
+# Local development and temporary artifacts
+/tmp/
+tmp/
+*.tmp
+*.part
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Build outputs
+build/
+bin/
+lib/
+out/
+dist/
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.cmake
+compile_commands.json
+
+# Persistent runtime data
+*.db
+*.db-wal
+*.db-shm
+.dibyt-staging/
+.dibyt-tmp-*/
+
+# Local environment and secret overrides
+.env
+.env.local
+.env.*.local
+!*.example
+
+# IDE and Editor configurations
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.sublime-project
+*.sublime-workspace

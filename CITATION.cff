@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use Dibyt in your research or systems work, please cite it as below."
+title: "Dibyt: Resilient, Parallel, and Resumable Self-Hosted File Distribution System"
+authors:
+  - family-names: "Patel"
+    given-names: "Raj"
+    orcid: "https://orcid.org/0009-0000-0000-0000"
+repository-code: "https://github.com/Raj-Patel7807/Dibyt"
+url: "https://github.com/Raj-Patel7807/Dibyt"
+keywords:
+  - "file-distribution"
+  - "tcp-socket"
+  - "fault-tolerance"
+  - "parallel-transfer"
+  - "checkpoint-resume"
+  - "systems-programming"
+  - "cpp20"
+license: "Apache-2.0"
+version: "0.1.0-dev"
+date-released: "2026-11-06"
