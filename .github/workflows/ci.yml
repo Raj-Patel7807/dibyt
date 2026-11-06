@@ -64,8 +64,8 @@ jobs:
         run: |
           ./build/benchmark_runner
 
-  dashboard-build-and-test:
-    name: 3. Web Dashboard Build & Typecheck
+  dashboard-quality-gate:
+    name: 3. Web Dashboard Quality Gate (Lint, Test & Build)
     runs-on: ubuntu-22.04
 
     steps:
@@ -83,15 +83,23 @@ jobs:
         run: |
           npm --prefix apps/dibyt-dashboard ci
 
-      - name: Verify TypeScript types and build production assets
+      - name: Run ESLint code quality checks
+        run: |
+          npm --prefix apps/dibyt-dashboard run lint
+
+      - name: Run Vitest unit tests
+        run: |
+          npm --prefix apps/dibyt-dashboard run test
+
+      - name: Verify TypeScript types and build production bundle
         run: |
           npm --prefix apps/dibyt-dashboard run build
 
   container-build:
     name: 4. Container Build & Packaging Validation
     runs-on: ubuntu-22.04
-    # Runs whenever the code builds and tests pass
-    needs: [code-audit, cpp-build-and-test, dashboard-build-and-test]
+    # Runs when code hygiene, C++ suite, and Web dashboard quality gates pass
+    needs: [code-audit, cpp-build-and-test, dashboard-quality-gate]
 
     steps:
       - name: Check out repository
@@ -104,7 +112,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: deploy/docker/Dockerfile.server
+          file: Dockerfile
           push: false
           tags: dibyt-server:ci-test
 
