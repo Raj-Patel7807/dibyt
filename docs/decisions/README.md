@@ -1,23 +1,24 @@
-# Architecture Decision Records (ADRs)
+# Architecture Decision Records (ADRs) — Dibyt
 
-This directory documents the significant architectural decisions made during the evolution of **Dibyt**.
+This directory documents the significant architectural and technical decisions made during the design and evolution of **Dibyt**.
 
-We use Architecture Decision Records to capture context, alternatives evaluated, rationale, and consequences for key technical choices.
-
----
-
-## Decision Record Index
-
-| ADR | Title | Status | Date |
-|---|---|---|---|
-| [ADR-0001](ADR-0001-modular-monolith.md) | Modular Monolith Architecture | **Proposed** | 2026-11-06 |
-| [ADR-0002](ADR-0002-sqlite-first.md) | SQLite as Primary Metadata and State Store | **Proposed** | 2026-11-06 |
-| [ADR-0003](ADR-0003-tcp-data-plane-http-control-plane.md) | Control-Plane (HTTP) and Data-Plane (TCP) Separation | **Proposed** | 2026-11-06 |
-| [ADR-0004](ADR-0004-linux-first-platform-support.md) | Linux-First Platform Support with Portability Stubs | **Proposed** | 2026-11-06 |
-| [ADR-0005](ADR-0005-immutable-manifest-snapshots.md) | Immutable Manifest Snapshot Policy | **Proposed** | 2026-11-06 |
+Rather than spreading each individual decision across dozens of isolated single-record files, decisions are consolidated into cohesive domain decision documents:
 
 ---
 
-## Guidelines for Authoring New ADRs
+## Consolidated Decision Files
 
-When proposing a new architectural decision, copy [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md) and assign the next sequential number. All ADRs remain `Proposed` until reviewed and formally approved by project maintainers.
+| File | Scope & Contained ADRs | Status |
+|---|---|---|
+| [**`01-ARCHITECTURE-DECISIONS.md`**](01-ARCHITECTURE-DECISIONS.md) | **System Architecture & Core Technical Choices**<br>• `ADR-0001`: Modular Monolith Architecture<br>• `ADR-0002`: SQLite as Primary Metadata and State Store<br>• `ADR-0003`: Control-Plane (HTTP) and Data-Plane (TCP) Separation<br>• `ADR-0004`: Linux-First Platform Support with Portability Stubs<br>• `ADR-0005`: Immutable Manifest Snapshot Policy | **Proposed** |
+| [**`02-PROTOCOL-AND-NETWORKING-DECISIONS.md`**](02-PROTOCOL-AND-NETWORKING-DECISIONS.md) | Framing, transport loops, timeout policy, backpressure, and TLS (Sprints 05–06, 15). | *Reserved for upcoming sprints* |
+| [**`03-DATA-INTEGRITY-AND-PERSISTENCE-DECISIONS.md`**](03-DATA-INTEGRITY-AND-PERSISTENCE-DECISIONS.md) | Checkpoint flush invariants, schema migration strategies, and staging files (Sprints 07–09). | *Reserved for upcoming sprints* |
+| [**`04-OPERATIONS-AND-PACKAGING-DECISIONS.md`**](04-OPERATIONS-AND-PACKAGING-DECISIONS.md) | CLI UX, containerization, and configuration discovery (Sprints 13–14, 19). | *Reserved for upcoming sprints* |
+
+---
+
+## Authoring Guidelines
+
+When proposing new decisions:
+- Consult [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md) for standard fields.
+- Append new records to the relevant categorized decision file rather than creating one-off markdown files.

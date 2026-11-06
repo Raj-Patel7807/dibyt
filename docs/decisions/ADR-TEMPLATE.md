@@ -49,3 +49,4 @@ Chosen option: "[Option 1]", because [justification summarizing key trade-offs].
 ### [Option 2]
 - Good, because [argument a]
 - Bad, because [argument b]
+
