@@ -144,21 +144,37 @@ target_link_libraries(dibyt_scheduler PUBLIC dibyt::core dibyt::storage)
 target_compile_features(dibyt_scheduler PUBLIC cxx_std_20)
 dibyt_apply_warnings(dibyt_scheduler)
 
-# Target 8: Thin CLI Application Executable
+# Target 8: Configuration, Logging, and Observability Subsystem
+add_library(dibyt_observability STATIC
+    libs/observability/src/config.cpp
+    libs/observability/src/logger.cpp
+)
+add_library(dibyt::observability ALIAS dibyt_observability)
+
+target_include_directories(dibyt_observability
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/observability/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(dibyt_observability PUBLIC dibyt::core)
+target_compile_features(dibyt_observability PUBLIC cxx_std_20)
+dibyt_apply_warnings(dibyt_observability)
+
+# Target 9: Thin CLI Application Executable
 add_executable(dibyt-cli
     apps/dibyt-cli/src/main.cpp
     apps/dibyt-cli/src/cli_parser.cpp
 )
 target_include_directories(dibyt-cli PRIVATE apps/dibyt-cli/src)
-target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler)
+target_link_libraries(dibyt-cli PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler dibyt::observability)
 dibyt_apply_warnings(dibyt-cli)
 set_target_properties(dibyt-cli PROPERTIES OUTPUT_NAME "dibyt")
 
-# Target 9: Thin Server Application Executable Skeleton
+# Target 10: Thin Server Application Executable Skeleton
 add_executable(dibyt-server
     apps/dibyt-server/src/main.cpp
 )
-target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler)
+target_link_libraries(dibyt-server PRIVATE dibyt::core dibyt::manifest dibyt::protocol dibyt::networking dibyt::transfer dibyt::storage dibyt::scheduler dibyt::observability)
 dibyt_apply_warnings(dibyt-server)
 
 # Target 10: Testing & Smoke Verification
@@ -243,4 +259,11 @@ if(DIBYT_BUILD_TESTS)
     target_link_libraries(test_recovery PRIVATE dibyt::core dibyt::transfer)
     dibyt_apply_warnings(test_recovery)
     add_test(NAME FaultRecoveryUnitTest COMMAND test_recovery)
+
+    add_executable(test_observability
+        tests/unit/observability/test_observability.cpp
+    )
+    target_link_libraries(test_observability PRIVATE dibyt::core dibyt::observability)
+    dibyt_apply_warnings(test_observability)
+    add_test(NAME ObservabilityUnitTest COMMAND test_observability)
 endif()
